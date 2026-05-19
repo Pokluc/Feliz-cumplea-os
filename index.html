@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Feliz Cumpleaños, Mamá!</title>
+    <!-- Tailwind CSS for modern fluid styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <!-- FontAwesome for beautiful icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                        cursive: ['Great Vibes', 'cursive'],
+                    },
+                    colors: {
+                        roseGold: {
+                            50: '#fff5f6',
+                            100: '#ffe6e9',
+                            200: '#fecdd3',
+                            300: '#fda4af',
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            DEFAULT: '#b76e79', // Rose gold primary
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #ffeef0 0%, #fce7f3 50%, #fae8ff 100%);
+            overflow-x: hidden;
+        }
+        
+        /* Floating animations for backgrounds */
+        .floating-heart {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 8s linear infinite;
+            z-index: 10;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(110vh) translateX(0) rotate(0deg) scale(0.5);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-10vh) translateX(100px) rotate(360deg) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        /* 3D Envelope Animations */
+        .envelope-wrapper {
+            perspective: 1000px;
+        }
+        .envelope {
+            position: relative;
+            background: #fff;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: transform 0.8s ease-in-out;
+            transform-style: preserve-3d;
+        }
+        .envelope.open {
+            transform: rotateY(180deg);
+        }
+
+        /* Shine effect for premium cards */
+        .shine-button {
+            position: relative;
+            overflow: hidden;
+        }
+        .shine-button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to bottom right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+        .shine-button:hover::after {
+            left: 120%;
+            top: 120%;
+        }
+
+        /* Candle flame animation */
+        .flame {
+            width: 12px;
+            height: 25px;
+            background: linear-gradient(to bottom, #ffea00, #ff7b00);
+            border-radius: 50% 50% 20% 20%;
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: flicker 1s ease-in-out infinite alternate;
+            filter: drop-shadow(0 0 5px rgba(255,123,0,0.8));
+        }
+
+        @keyframes flicker {
+            0% { transform: translateX(-50%) rotate(-2deg) scaleX(0.9); }
+            100% { transform: translateX(-50%) rotate(2deg) scaleX(1.1) scaleY(1.1); }
+        }
+
+        /* Card flip for Memory Game */
+        .card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card-flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between pb-6 select-none relative">
+
+    <canvas id="confetti-canvas" class="fixed top-0 left-0 w-full h-full pointer-events-none z-50"></canvas>
+
+    <!-- Intro Screen (Envelope Open) -->
+    <div id="intro-screen" class="fixed inset-0 z-40 bg-gradient-to-br from-rose-50 to-pink-100 flex flex-col items-center justify-center p-4">
+        <div class="text-center mb-8 animate-fade-in-down">
+            <h1 class="font-cursive text-5xl md:text-7xl text-rose-600 mb-2">¡Feliz Cumpleaños, Mamá!</h1>
+            <p class="font-serif text-gray-600 italic text-lg md:text-xl">Tienes una sorpresa especial esperándote aquí dentro...</p>
+        </div>
+
+        <div class="envelope-wrapper w-80 h-64 md:w-[450px] md:h-80 cursor-pointer relative" onclick="openEnvelope()">
+            <div id="envelope-element" class="w-full h-full rounded-2xl bg-rose-200 border-4 border-white shadow-2xl relative transition-transform duration-1000 ease-in-out transform hover:scale-105 flex flex-col items-center justify-center overflow-hidden">
+                
+                <!-- Envelope flap (Back representation) -->
+                <div class="absolute top-0 inset-x-0 h-1/2 bg-rose-300 rounded-b-full origin-top transition-transform duration-700 delay-300 z-10 flex items-center justify-center shadow-inner">
+                    <span class="text-white font-serif tracking-widest text-sm uppercase">Con todo mi amor</span>
+                </div>
+                
+                <!-- Gold Seal -->
+                <div class="z-20 w-20 h-20 rounded-full bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 flex items-center justify-center shadow-lg border-2 border-white transform hover:scale-110 active:scale-95 transition-all">
+                    <i class="fa-solid fa-heart text-white text-3xl animate-pulse"></i>
+                </div>
+
+                <div class="absolute bottom-4 text-center z-10">
+                    <p class="font-serif text-rose-800 font-semibold text-lg">Haz clic para abrir</p>
+                    <p class="text-xs text-rose-600 italic">Hecho especialmente para ti</p>
+                </div>
+                
+                <!-- Decorative flowers SVGs inside -->
+                <div class="absolute -bottom-6 -left-6 w-24 h-24 text-rose-300 opacity-60">
+                    <svg viewBox="0 0 100 100" fill="currentColor"><path d="M50,0 C60,20 80,10 70,30 C90,40 80,60 60,50 C70,70 50,80 40,60 C30,80 10,70 20,50 C0,60 -10,40 10,30 C0,10 20,20 50,0 Z"></path></svg>
+                </div>
+                <div class="absolute -bottom-6 -right-6 w-24 h-24 text-rose-300 opacity-60 transform scale-x-[-1]">
+                    <svg viewBox="0 0 100 100" fill="currentColor"><path d="M50,0 C60,20 80,10 70,30 C90,40 80,60 60,50 C70,70 50,80 40,60 C30,80 10,70 20,50 C0,60 -10,40 10,30 C0,10 20,20 50,0 Z"></path></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container (Hidden initially) -->
+    <div id="main-app" class="hidden w-full max-w-4xl mx-auto px-4 py-6 md:py-10 flex-grow flex flex-col items-center justify-start">
+        
+        <!-- Header Banner -->
+        <header class="w-full text-center mb-8 relative">
+            <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 opacity-30 pointer-events-none">
+                <i class="fa-solid fa-crown text-6xl text-amber-400"></i>
+            </div>
+            <h1 class="font-cursive text-6xl md:text-8xl text-rose-600 drop-shadow-sm mb-1">
+                ¡Feliz Cumpleaños, <span id="mom-name-display" class="font-semibold text-rose-700">Mamá</span>!
+            </h1>
+            <p class="font-serif text-gray-700 text-lg md:text-xl italic max-w-lg mx-auto">
+                "El amor de una madre es el motor que le permite a un ser humano común hacer lo imposible."
+            </p>
+            
+            <!-- Quick Config Trigger -->
+            <button onclick="toggleConfigModal()" class="absolute top-2 right-2 p-2 bg-white/80 hover:bg-white rounded-full text-rose-500 hover:text-rose-700 shadow-md transition-all text-sm md:text-base border border-rose-100" title="Personalizar esta tarjeta">
+                <i class="fa-solid fa-gears mr-1"></i> Personalizar
+            </button>
+        </header>
+
+        <!-- Interactive Navigation Tabs -->
+        <nav class="w-full flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
+            <button id="tab-btn-letter" onclick="switchTab('letter')" class="px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-rose-600 text-white transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                <i class="fa-solid fa-envelope-open-text"></i> Mi Carta
+            </button>
+            <button id="tab-btn-cake" onclick="switchTab('cake')" class="px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-white text-rose-700 hover:bg-rose-50 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                <i class="fa-solid fa-cake-candles"></i> Soplar Velas
+            </button>
+            <button id="tab-btn-music" onclick="switchTab('music')" class="px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-white text-rose-700 hover:bg-rose-50 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                <i class="fa-solid fa-music"></i> Caja de Música
+            </button>
+            <button id="tab-btn-game" onclick="switchTab('game')" class="px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-white text-rose-700 hover:bg-rose-50 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                <i class="fa-solid fa-puzzle-piece"></i> Juego de Recuerdos
+            </button>
+        </nav>
+
+        <!-- Tab 1: Love Letter -->
+        <section id="tab-content-letter" class="w-full bg-white/95 backdrop-blur-md rounded-3xl p-6 md:p-10 shadow-2xl border-4 border-double border-rose-200 transition-all duration-500">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                <!-- Image Holder (Configurable) -->
+                <div class="col-span-1 md:col-span-5 flex flex-col items-center">
+                    <div class="relative group p-3 bg-white border border-rose-100 shadow-xl rounded-2xl transform rotate-2 hover:rotate-0 transition-transform duration-500">
+                        <!-- Standard fallback picture frame if user has no image -->
+                        <img id="mom-photo" src="https://placehold.co/400x450/fff0f2/e11d48?text=Para+Mamá+💖" 
+                             alt="Foto de Mamá" 
+                             class="rounded-xl object-cover w-64 h-80 md:w-full md:h-[380px] border-2 border-rose-100"
+                             onerror="this.src='https://placehold.co/400x450/fff0f2/e11d48?text=Para+Mamá+💖'">
+                        <div class="absolute -bottom-2 right-4 bg-amber-400 text-rose-950 font-cursive text-xl px-4 py-1 rounded-full shadow-md transform rotate-3">
+                            ¡La mejor del mundo!
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- The Letter -->
+                <div class="col-span-1 md:col-span-7 flex flex-col justify-between h-full">
+                    <div>
+                        <span class="font-cursive text-3xl text-rose-500 block mb-2">Querida <span id="mom-salutation">Mamá</span>,</span>
+                        <div id="letter-body-display" class="font-serif text-gray-700 leading-relaxed text-base md:text-lg whitespace-pre-line space-y-4 max-h-[350px] overflow-y-auto pr-2">
+                            Hoy celebramos el día en que nació la persona más importante de mi vida. 
+                            
+                            Gracias por ser mi refugio constante, mi guía paciente y mi amor incondicional. En cada uno de tus abrazos encuentro la paz y en tu sonrisa la inspiración para seguir adelante todos los días. 
+
+                            Te mereces toda la felicidad que el universo pueda regalarte, hoy y siempre. Que este año que comienzas te traiga salud, risas y momentos inolvidables.
+
+                            ¡Feliz Cumpleaños! Te amo con todo mi corazón.
+                        </div>
+                    </div>
+                    <div class="mt-8 border-t border-rose-100 pt-4 flex justify-between items-center flex-wrap gap-2">
+                        <div>
+                            <p class="font-cursive text-2xl text-rose-600">Con amor infinito,</p>
+                            <p id="sender-name-display" class="font-serif font-bold text-gray-800 text-lg">Tu hijo/a que te adora</p>
+                        </div>
+                        <button onclick="celebrateWithConfetti(150)" class="shine-button px-6 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> ¡Lluvia de Confeti!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 2: Blow Candles Game -->
+        <section id="tab-content-cake" class="w-full hidden bg-white/95 backdrop-blur-md rounded-3xl p-6 md:p-10 shadow-2xl border-4 border-double border-rose-200 text-center">
+            <h2 class="font-serif text-3xl text-gray-800 mb-2">¡Pide un deseo!</h2>
+            <p class="text-gray-600 mb-8 max-w-md mx-auto">Haz clic o toca cada una de las velas para apagarlas. ¡Cuando las apagues todas, el deseo se cumplirá!</p>
+            
+            <div class="relative w-80 h-96 mx-auto flex flex-col items-center justify-end pb-8">
+                <!-- Interactive Candles Row on Cake -->
+                <div class="flex justify-center gap-6 absolute bottom-40 z-20">
+                    <!-- Candle 1 -->
+                    <div id="candle-1" onclick="extinguishCandle(1)" class="relative cursor-pointer transition-all duration-300 hover:scale-105">
+                        <div id="flame-1" class="flame"></div>
+                        <div class="w-5 h-20 bg-gradient-to-r from-teal-400 to-cyan-400 rounded-t-lg shadow-md border-b-2 border-teal-500"></div>
+                    </div>
+                    <!-- Candle 2 -->
+                    <div id="candle-2" onclick="extinguishCandle(2)" class="relative cursor-pointer transition-all duration-300 hover:scale-105">
+                        <div id="flame-2" class="flame"></div>
+                        <div class="w-5 h-20 bg-gradient-to-r from-yellow-400 to-amber-400 rounded-t-lg shadow-md border-b-2 border-yellow-500"></div>
+                    </div>
+                    <!-- Candle 3 -->
+                    <div id="candle-3" onclick="extinguishCandle(3)" class="relative cursor-pointer transition-all duration-300 hover:scale-105">
+                        <div id="flame-3" class="flame"></div>
+                        <div class="w-5 h-20 bg-gradient-to-r from-pink-400 to-rose-400 rounded-t-lg shadow-md border-b-2 border-pink-500"></div>
+                    </div>
+                    <!-- Candle 4 -->
+                    <div id="candle-4" onclick="extinguishCandle(4)" class="relative cursor-pointer transition-all duration-300 hover:scale-105">
+                        <div id="flame-4" class="flame"></div>
+                        <div class="w-5 h-20 bg-gradient-to-r from-purple-400 to-indigo-400 rounded-t-lg shadow-md border-b-2 border-purple-500"></div>
+                    </div>
+                </div>
+
+                <!-- Three-tiered Beautiful CSS Cake -->
+                <div class="w-64 h-44 flex flex-col items-center justify-end relative z-10">
+                    <!-- Top Tier -->
+                    <div class="w-44 h-14 bg-gradient-to-r from-rose-200 to-rose-300 rounded-t-2xl relative border-b border-rose-400/20 shadow-md">
+                        <!-- Cream drips -->
+                        <div class="absolute -bottom-1 left-0 right-0 h-4 bg-white/90 rounded-b-full flex justify-around">
+                            <span class="w-4 h-4 bg-white rounded-full"></span>
+                            <span class="w-4 h-6 bg-white rounded-full -mt-1"></span>
+                            <span class="w-4 h-4 bg-white rounded-full"></span>
+                            <span class="w-4 h-5 bg-white rounded-full -mt-1"></span>
+                            <span class="w-4 h-4 bg-white rounded-full"></span>
+                            <span class="w-4 h-6 bg-white rounded-full -mt-1"></span>
+                            <span class="w-4 h-4 bg-white rounded-full"></span>
+                        </div>
+                    </div>
+                    <!-- Middle Tier -->
+                    <div class="w-56 h-14 bg-gradient-to-r from-pink-300 to-pink-400 border-b border-pink-500/20 shadow-lg relative flex items-center justify-center">
+                        <div class="flex gap-2 text-white/50 text-xs">
+                            <i class="fa-solid fa-heart"></i>
+                            <i class="fa-solid fa-heart"></i>
+                            <i class="fa-solid fa-heart"></i>
+                            <i class="fa-solid fa-heart"></i>
+                            <i class="fa-solid fa-heart"></i>
+                        </div>
+                    </div>
+                    <!-- Bottom Tier -->
+                    <div class="w-64 h-16 bg-gradient-to-r from-rose-400 to-rose-500 rounded-b-lg shadow-xl relative flex items-center justify-center">
+                        <p class="font-cursive text-white text-3xl font-bold tracking-wider">Te queremos mucho</p>
+                    </div>
+                </div>
+
+                <!-- Cake Plate -->
+                <div class="w-72 h-4 bg-slate-200 rounded-full shadow-md"></div>
+            </div>
+
+            <div class="mt-4">
+                <button onclick="resetCandles()" class="px-6 py-2 border-2 border-rose-300 text-rose-700 hover:bg-rose-50 font-semibold rounded-xl shadow-md transition-all">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Encender Velas de Nuevo
+                </button>
+            </div>
+        </section>
+
+        <!-- Tab 3: Music Box -->
+        <section id="tab-content-music" class="w-full hidden bg-white/95 backdrop-blur-md rounded-3xl p-6 md:p-10 shadow-2xl border-4 border-double border-rose-200 text-center">
+            <h2 class="font-serif text-3xl text-gray-800 mb-2">Caja de Música de Cumpleaños</h2>
+            <p class="text-gray-600 mb-6 max-w-md mx-auto">Pulsa los botones para tocar la melodía de Cumpleaños Feliz o crea tus propios sonidos con el teclado musical táctil.</p>
+            
+            <div class="flex flex-col items-center gap-6 max-w-lg mx-auto bg-rose-50/50 p-6 rounded-2xl border border-rose-100">
+                <!-- Automator Button -->
+                <button id="play-song-btn" onclick="playBirthdayMelody()" class="shine-button px-8 py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-white font-bold text-lg rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-3">
+                    <i class="fa-solid fa-circle-play text-xl"></i> Tocar "Cumpleaños Feliz"
+                </button>
+                <div id="playing-indicator" class="hidden text-rose-600 animate-pulse text-sm font-semibold">
+                    <i class="fa-solid fa-music-note mr-1"></i> Interpretando hermosa melodía...
+                </div>
+
+                <!-- Custom Synth Keyboard -->
+                <div class="w-full mt-4">
+                    <p class="text-xs text-rose-700 font-semibold uppercase tracking-wider mb-2">Toca las teclas para componer algo dulce</p>
+                    <div class="flex justify-center w-full bg-slate-900 p-3 rounded-xl shadow-inner gap-1">
+                        <button onclick="playNote(261.63)" class="h-28 flex-1 bg-white hover:bg-slate-100 active:bg-slate-200 rounded-b-md shadow-md transition-all flex items-end justify-center pb-2 text-xs text-slate-500 font-bold">Do</button>
+                        <button onclick="playNote(293.66)" class="h-28 flex-1 bg-white hover:bg-slate-100 active:bg-slate-200 rounded-b-md shadow-md transition-all flex items-end justify-center pb-2 text-xs text-slate-500 font-bold">Re</button>
+                        <button onclick="playNote(329.63)" class="h-28 flex-1 bg-white hover:bg-slate-100 active:bg-slate-200 rounded-b-md shadow-md transition-all flex items-end justify-center pb-2 text-xs text-slate-500 font-bold">Mi</button>
+                        <button onclick="playNote(349.23)" class="h-28 flex-1 bg-white hover:bg-slate-100 active:bg-slate-200 rounded-b-md shadow-md transition-all flex items-end justify-center pb-2 text-xs text-slate-500 font-bold">Fa</button>
+                        <button onclick="playNote(392.00)" class="h-28 flex-1 bg-white hover:bg-slate-100 active:bg-slate-200 rounded-b-md shadow-md transition-all flex items-end justify-center pb-2 text-xs text-slate-500 font-bold">Sol</button>
+                        <button onclick="playNote(440.00)" class="h-28 flex-1 bg-white hover:bg-slate-100 active:bg-slate-200 rounded-b-md shadow-md transition-all flex items-end justify-center pb-2 text-xs text-slate-500 font-bold">La</button>
+                        <button onclick="playNote(493.88)" class="h-28 flex-1 bg-white hover:bg-slate-100 active:bg-slate-200 rounded-b-md shadow-md transition-all flex items-end justify-center pb-2 text-xs text-slate-500 font-bold">Si</button>
+                        <button onclick="playNote(523.25)" class="h-28 flex-1 bg-white hover:bg-slate-100 active:bg-slate-200 rounded-b-md shadow-md transition-all flex items-end justify-center pb-2 text-xs text-slate-500 font-bold">Do+</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 4: Memory Match Game -->
+        <section id="tab-content-game" class="w-full hidden bg-white/95 backdrop-blur-md rounded-3xl p-6 md:p-10 shadow-2xl border-4 border-double border-rose-200 text-center">
+            <h2 class="font-serif text-3xl text-gray-800 mb-2">Juego de los Recuerdos</h2>
+            <p class="text-gray-600 mb-6 max-w-md mx-auto">Encuentra los pares de hermosos símbolos inspirados en el amor y la familia. ¡Al completar el juego, hay una felicitación especial!</p>
+            
+            <div class="flex justify-between items-center max-w-sm mx-auto mb-4 text-sm font-semibold text-rose-700">
+                <div>Movimientos: <span id="game-moves" class="font-mono text-base">0</span></div>
+                <div>Aciertos: <span id="game-matches" class="font-mono text-base">0</span>/6</div>
+                <button onclick="resetMemoryGame()" class="text-rose-500 hover:text-rose-800 underline">Reiniciar</button>
+            </div>
+
+            <!-- Memory Game Grid (3x4) -->
+            <div id="memory-grid" class="grid grid-cols-4 gap-3 max-w-sm mx-auto aspect-square">
+                <!-- Filled dynamically via JS -->
+            </div>
+            
+            <div id="game-success-message" class="hidden mt-6 bg-pink-50 p-4 rounded-xl border-2 border-pink-100 text-rose-800 animate-bounce">
+                <i class="fa-solid fa-trophy text-2xl text-amber-500 mb-1"></i>
+                <p class="font-bold">¡Lo has logrado, Mamá!</p>
+                <p class="text-sm">¡Eres la campeona de nuestro corazón!</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full text-center mt-6 text-xs text-rose-800/60 font-medium">
+        Creado con amor infinito para celebrar tu día especial 🌸 2026
+    </footer>
+
+    <!-- CONFIG MODAL (Customization features) -->
+    <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl border-2 border-rose-100 transform transition-all flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center pb-4 border-b border-rose-100">
+                <h3 class="font-serif text-2xl text-rose-800 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> Personalizar Aplicación
+                </h3>
+                <button onclick="toggleConfigModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-circle-xmark text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="flex-grow overflow-y-auto py-4 space-y-4 pr-1">
+                <!-- Mom Name Field -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">¿Cómo llamas a tu madre? (Nombre a mostrar)</label>
+                    <input id="config-mom-name" type="text" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-rose-400 focus:outline-none" value="Mamá" placeholder="Ej: Mamá, Mami, Madrecita, Carmen...">
+                </div>
+
+                <!-- Sender Name Field -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Firma (Tu nombre o apodo)</label>
+                    <input id="config-sender-name" type="text" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-rose-400 focus:outline-none" value="Tu hijo/a que te adora" placeholder="Ej: Con todo el amor de Lucas, Tus hijos...">
+                </div>
+
+                <!-- Custom Photo URL -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Enlace a una foto de ella o de ustedes juntos</label>
+                    <input id="config-photo-url" type="text" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-rose-400 focus:outline-none text-sm" value="" placeholder="Copia el enlace de cualquier foto pública de internet o red social">
+                    <p class="text-xs text-gray-500 mt-1">Si lo dejas vacío, se mostrará una adorable tarjeta ilustrativa.</p>
+                </div>
+
+                <!-- Letter Text Editor -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Carta de Felicitación</label>
+                    <textarea id="config-letter-body" rows="6" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-rose-400 focus:outline-none text-sm leading-relaxed"></textarea>
+                </div>
+            </div>
+
+            <!-- Modal footer actions -->
+            <div class="pt-4 border-t border-rose-100 flex gap-3 justify-end">
+                <button onclick="resetDefaults()" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Restablecer todo</button>
+                <button onclick="saveAndApplyConfig()" class="shine-button px-6 py-2 bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all">
+                    Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables and state
+        let appState = {
+            momName: "Mamá",
+            senderName: "Tu hijo/a que te adora",
+            photoUrl: "",
+            letterBody: `Hoy celebramos el día en que nació la persona más importante de mi vida. 
+            
+Gracias por ser mi refugio constante, mi guía paciente y mi amor incondicional. En cada uno de tus abrazos encuentro la paz y en tu sonrisa la inspiración para seguir adelante todos los días. 
+
+Te mereces toda la felicidad que el universo pueda regalarte, hoy y siempre. Que este año que comienzas te traiga salud, risas y momentos inolvidables.
+
+¡Feliz Cumpleaños! Te amo con todo mi corazón.`,
+            activeTab: "letter",
+            candlesBlown: [false, false, false, false],
+            isMusicPlaying: false
+        };
+
+        // Confetti Engine Setup
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let confettiArray = [];
+        let animationFrameId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class ConfettiParticle {
+            constructor(x, y) {
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || Math.random() * canvas.height - canvas.height;
+                this.size = Math.random() * 8 + 6;
+                this.color = ['#f43f5e', '#ec4899', '#fb7185', '#fbbf24', '#34d399', '#60a5fa', '#f472b6', '#ffd700'][Math.floor(Math.random() * 8)];
+                this.speedY = Math.random() * 3 + 4;
+                this.speedX = Math.random() * 4 - 2;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 4 - 2;
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                this.rotation += this.rotationSpeed;
+                if (this.y > canvas.height) {
+                    this.y = -20;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function celebrateWithConfetti(count = 100) {
+            cancelAnimationFrame(animationFrameId);
+            confettiArray = [];
+            for (let i = 0; i < count; i++) {
+                confettiArray.push(new ConfettiParticle());
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let activeParticles = false;
+            confettiArray.forEach(p => {
+                p.update();
+                p.draw();
+                if (p.y < canvas.height - 10) activeParticles = true;
+            });
+            if (activeParticles || confettiArray.length > 0) {
+                animationFrameId = requestAnimationFrame(animateConfetti);
+            }
+        }
+
+        // Floating background decorative hearts generator
+        function createFloatingHeart() {
+            const heart = document.createElement('i');
+            heart.className = 'fa-solid fa-heart floating-heart text-rose-300/30';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.fontSize = Math.random() * 20 + 15 + 'px';
+            heart.style.animationDuration = Math.random() * 4 + 6 + 's';
+            heart.style.transform = `rotate(${Math.random() * 360}deg)`;
+            document.body.appendChild(heart);
+            setTimeout(() => {
+                heart.remove();
+            }, 10000);
+        }
+        setInterval(createFloatingHeart, 800);
+
+        // Pure Web Audio Synth - No external file dependencies, completely robust and premium sounding
+        let audioCtx = null;
+        let melodyTimeoutIds = [];
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playNote(frequency, duration = 0.4, type = 'triangle') {
+            initAudioContext();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+            // Sweet musical envelope (Caja de música/Pluck sound)
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.05); // attack
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration); // decay
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // "Happy Birthday" melody in C Major (Notes mapping to frequencies)
+        const notes = {
+            'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23,
+            'G4': 392.00, 'A4': 440.00, 'Bb4': 466.16, 'B4': 493.88,
+            'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46
+        };
+
+        const birthdayMelody = [
+            { note: 'C4', dur: 0.35 }, { note: 'C4', dur: 0.15 },
+            { note: 'D4', dur: 0.5 }, { note: 'C4', dur: 0.5 },
+            { note: 'F4', dur: 0.5 }, { note: 'E4', dur: 1.0 },
+
+            { note: 'C4', dur: 0.35 }, { note: 'C4', dur: 0.15 },
+            { note: 'D4', dur: 0.5 }, { note: 'C4', dur: 0.5 },
+            { note: 'G4', dur: 0.5 }, { note: 'F4', dur: 1.0 },
+
+            { note: 'C4', dur: 0.35 }, { note: 'C4', dur: 0.15 },
+            { note: 'C5', dur: 0.5 }, { note: 'A4', dur: 0.5 },
+            { note: 'F4', dur: 0.5 }, { note: 'E4', dur: 0.5 }, { note: 'D4', dur: 0.8 },
+
+            { note: 'Bb4', dur: 0.35 }, { note: 'Bb4', dur: 0.15 },
+            { note: 'A4', dur: 0.5 }, { note: 'F4', dur: 0.5 },
+            { note: 'G4', dur: 0.5 }, { note: 'F4', dur: 1.2 }
+        ];
+
+        function playBirthdayMelody() {
+            initAudioContext();
+            if (appState.isMusicPlaying) {
+                // Stop melody if currently playing
+                stopMelody();
+                return;
+            }
+
+            appState.isMusicPlaying = true;
+            document.getElementById('play-song-btn').innerHTML = '<i class="fa-solid fa-circle-stop text-xl"></i> Detener Melodía';
+            document.getElementById('playing-indicator').classList.remove('hidden');
+
+            let timeAccumulator = 0;
+            melodyTimeoutIds = [];
+
+            birthdayMelody.forEach((step, index) => {
+                const timeoutId = setTimeout(() => {
+                    if (appState.isMusicPlaying) {
+                        playNote(notes[step.note], step.dur * 1.5, 'sine');
+                    }
+                    if (index === birthdayMelody.length - 1) {
+                        setTimeout(() => stopMelody(), step.dur * 1500);
+                    }
+                }, timeAccumulator * 1000);
+                
+                melodyTimeoutIds.push(timeoutId);
+                timeAccumulator += step.dur * 1.2; // Speed multiplier
+            });
+        }
+
+        function stopMelody() {
+            appState.isMusicPlaying = false;
+            melodyTimeoutIds.forEach(id => clearTimeout(id));
+            melodyTimeoutIds = [];
+            document.getElementById('play-song-btn').innerHTML = '<i class="fa-solid fa-circle-play text-xl"></i> Tocar "Cumpleaños Feliz"';
+            document.getElementById('playing-indicator').classList.add('hidden');
+        }
+
+        const memoryCards = [
+            { icon: 'fa-heart', id: 1 }, { icon: 'fa-gift', id: 2 }, 
+            { icon: 'fa-solid fa-cake-candles', id: 3 }, { icon: 'fa-sun', id: 4 }, 
+            { icon: 'fa-child-reaching', id: 5 }, { icon: 'fa-certificate', id: 6 }
+        ];
+
+        let gameCards = [];
+        let flippedCards = [];
+        let movesCount = 0;
+        let matchedCount = 0;
+
+        function initMemoryGame() {
+            // Duplicate array to make pairs, then shuffle
+            gameCards = [...memoryCards, ...memoryCards]
+                .map((card, index) => ({ ...card, uniqueId: index, flipped: false, matched: false }))
+                .sort(() => Math.random() - 0.5);
+
+            movesCount = 0;
+            matchedCount = 0;
+            flippedCards = [];
+            document.getElementById('game-moves').innerText = '0';
+            document.getElementById('game-matches').innerText = '0';
+            document.getElementById('game-success-message').classList.add('hidden');
+
+            renderMemoryGrid();
+        }
+
+        function renderMemoryGrid() {
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+
+            gameCards.forEach((card) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = `w-full h-full cursor-pointer rounded-xl relative overflow-hidden aspect-square ${card.flipped || card.matched ? 'card-flipped' : ''}`;
+                cardEl.dataset.id = card.uniqueId;
+                
+                cardEl.innerHTML = `
+                    <div class="card-inner w-full h-full relative transition-transform duration-500">
+                        <!-- Card Front (Cover) -->
+                        <div class="card-front w-full h-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white border-2 border-white rounded-xl shadow-md">
+                            <i class="fa-solid fa-sparkles text-2xl opacity-60"></i>
+                        </div>
+                        <!-- Card Back (Symbol Revealed) -->
+                        <div class="card-back w-full h-full bg-white flex items-center justify-center text-rose-600 border-2 border-rose-300 rounded-xl shadow-inner">
+                            <i class="fa-solid ${card.icon} text-3xl"></i>
+                        </div>
+                    </div>
+                `;
+
+                cardEl.addEventListener('click', () => handleCardClick(card));
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function handleCardClick(clickedCard) {
+            // Guard conditions
+            if (flippedCards.length >= 2 || clickedCard.flipped || clickedCard.matched) return;
+
+            // Flip the clicked card
+            clickedCard.flipped = true;
+            flippedCards.push(clickedCard);
+            renderMemoryGrid();
+
+            // Check match
+            if (flippedCards.length === 2) {
+                movesCount++;
+                document.getElementById('game-moves').innerText = movesCount;
+
+                const [card1, card2] = flippedCards;
+                if (card1.id === card2.id) {
+                    // Match found
+                    card1.matched = true;
+                    card2.matched = true;
+                    matchedCount++;
+                    document.getElementById('game-matches').innerText = matchedCount;
+                    flippedCards = [];
+
+                    // Soft success sound
+                    playNote(440, 0.15);
+                    setTimeout(() => playNote(554.37, 0.25), 100);
+
+                    if (matchedCount === memoryCards.length) {
+                        setTimeout(() => {
+                            document.getElementById('game-success-message').classList.remove('hidden');
+                            celebrateWithConfetti(150);
+                            playNote(523.25, 0.3); // High pitch celebrate chord
+                            playNote(659.25, 0.3);
+                        }, 500);
+                    }
+                } else {
+                    // No match, flip back over after delay
+                    setTimeout(() => {
+                        card1.flipped = false;
+                        card2.flipped = false;
+                        flippedCards = [];
+                        renderMemoryGrid();
+                    }, 1000);
+                }
+            }
+        }
+
+        function resetMemoryGame() {
+            initMemoryGame();
+        }
+
+        function extinguishCandle(number) {
+            if (appState.candlesBlown[number - 1]) return; // Already extinguished
+
+            // Extinguish Logic
+            appState.candlesBlown[number - 1] = true;
+            document.getElementById(`flame-${number}`).classList.add('hidden');
+            
+            // Soft wind blow synth effect
+            playNote(100, 0.3, 'sawtooth');
+
+            // Trigger sparkle particle for fun
+            celebrateWithConfetti(15);
+
+            // Check if all candles are blown
+            if (appState.candlesBlown.every(candle => candle === true)) {
+                setTimeout(() => {
+                    celebrateWithConfetti(200);
+                    // Play majestic synthesized sound for celebration
+                    setTimeout(() => playNote(261.63, 0.3), 0);
+                    setTimeout(() => playNote(329.63, 0.3), 150);
+                    setTimeout(() => playNote(392.00, 0.3), 300);
+                    setTimeout(() => playNote(523.25, 0.6), 450);
+                }, 400);
+            }
+        }
+
+        function resetCandles() {
+            appState.candlesBlown = [false, false, false, false];
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`flame-${i}`).classList.remove('hidden');
+            }
+        }
+
+        // Navigation system
+        function switchTab(tabName) {
+            stopMelody(); // Stop the musical track when switching context
+            
+            // Hide all tabs
+            document.getElementById('tab-content-letter').classList.add('hidden');
+            document.getElementById('tab-content-cake').classList.add('hidden');
+            document.getElementById('tab-content-music').classList.add('hidden');
+            document.getElementById('tab-content-game').classList.add('hidden');
+
+            // De-activate all navigation buttons
+            document.getElementById('tab-btn-letter').className = "px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-white text-rose-700 hover:bg-rose-50 transition-all transform hover:-translate-y-0.5 flex items-center gap-2";
+            document.getElementById('tab-btn-cake').className = "px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-white text-rose-700 hover:bg-rose-50 transition-all transform hover:-translate-y-0.5 flex items-center gap-2";
+            document.getElementById('tab-btn-music').className = "px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-white text-rose-700 hover:bg-rose-50 transition-all transform hover:-translate-y-0.5 flex items-center gap-2";
+            document.getElementById('tab-btn-game').className = "px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-white text-rose-700 hover:bg-rose-50 transition-all transform hover:-translate-y-0.5 flex items-center gap-2";
+
+            // Show active tab
+            document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+
+            // Activate chosen nav button
+            document.getElementById(`tab-btn-${tabName}`).className = "px-5 py-3 rounded-full text-sm md:text-base font-semibold shadow-md border-2 border-white bg-rose-600 text-white transition-all transform hover:-translate-y-0.5 flex items-center gap-2";
+
+            if (tabName === 'game') {
+                initMemoryGame();
+            }
+        }
+
+        // Open Envelope transition
+        function openEnvelope() {
+            // Trigger beautiful open animation
+            document.getElementById('envelope-element').classList.add('scale-150', 'opacity-0');
+            
+            // Play a soft wind chime entry note
+            playNote(523.25, 0.2);
+            setTimeout(() => playNote(659.25, 0.2), 100);
+            setTimeout(() => playNote(783.99, 0.3), 200);
+
+            setTimeout(() => {
+                document.getElementById('intro-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                celebrateWithConfetti(180);
+            }, 600);
+        }
+
+        // Config & Personalization Modal Functions
+        function toggleConfigModal() {
+            const modal = document.getElementById('config-modal');
+            modal.classList.toggle('hidden');
+
+            // Pre-fill inputs with current state when opening
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('config-mom-name').value = appState.momName;
+                document.getElementById('config-sender-name').value = appState.senderName;
+                document.getElementById('config-photo-url').value = appState.photoUrl;
+                document.getElementById('config-letter-body').value = appState.letterBody;
+            }
+        }
+
+        function saveAndApplyConfig() {
+            appState.momName = document.getElementById('config-mom-name').value || "Mamá";
+            appState.senderName = document.getElementById('config-sender-name').value || "Tu hijo/a que te adora";
+            appState.photoUrl = document.getElementById('config-photo-url').value;
+            appState.letterBody = document.getElementById('config-letter-body').value;
+
+            // Apply to view
+            document.getElementById('mom-name-display').innerText = appState.momName;
+            document.getElementById('mom-salutation').innerText = appState.momName;
+            document.getElementById('sender-name-display').innerText = appState.senderName;
+            document.getElementById('letter-body-display').innerText = appState.letterBody;
+
+            const photoImg = document.getElementById('mom-photo');
+            if (appState.photoUrl) {
+                photoImg.src = appState.photoUrl;
+            } else {
+                photoImg.src = "https://placehold.co/400x450/fff0f2/e11d48?text=Para+Mamá+💖";
+            }
+
+            toggleConfigModal();
+            celebrateWithConfetti(80);
+        }
+
+        function resetDefaults() {
+            document.getElementById('config-mom-name').value = "Mamá";
+            document.getElementById('config-sender-name').value = "Tu hijo/a que te adora";
+            document.getElementById('config-photo-url').value = "";
+            document.getElementById('config-letter-body').value = `Hoy celebramos el día en que nació la persona más importante de mi vida. 
+            
+Gracias por ser mi refugio constante, mi guía paciente y mi amor incondicional. En cada uno de tus abrazos encuentro la paz y en tu sonrisa la inspiración para seguir adelante todos los días. 
+
+Te mereces toda la felicidad que el universo pueda regalarte, hoy y siempre. Que este año que comienzas te traiga salud, risas y momentos inolvidables.
+
+¡Feliz Cumpleaños! Te amo con todo mi corazón.`;
+        }
+
+        // Initialize values on first run
+        window.onload = function() {
+            // Setup dynamic default text values inside text area
+            document.getElementById('config-letter-body').value = appState.letterBody;
+        };
+    </script>
+</body>
+</html>
